@@ -5,14 +5,17 @@
   <meta charset="utf-8" />
   <!-- Mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-  <title>Playground</title>
+  <title>Putte info</title>
 
 </head>
 
 <body>
   <div id="message-display">
-    <h1>Received</h1>
+    <h2>Bot Settings</h2>
 
+    <h2>Latest</h2>
+
+    <h2>Raw feed</h2>
     <ul id="messages">
       <li v-for="message in messages" track-by="$index">{{ message }}</li>
     </ul>
@@ -35,16 +38,16 @@
 
       ready: function () {
         socket.on('message', (message) => {
-          console.log('Received: ', message);
+          // console.log('Received: ', message);
           this.messages.push(JSON.stringify(message) || message || 'error in message');
         });
 
         socket.on('disconnect', (message) => {
-          this.messages.push('The server disconnected');
+          this.messages.push('< The server disconnected >');
         });
 
         socket.on('connect', (message) => {
-          this.messages.push('Connected to server');
+          this.messages.push('< Connected to server >');
         })
       },
     });

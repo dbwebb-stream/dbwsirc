@@ -3,12 +3,15 @@
 
 // Includes
 const R = require('ramda')
+const M = require('ramda-fantasy')
 const app = require('express')()
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const irc = require('irc')
+const most = require('most')
 
 const log = require('./src/logger/logger')
+const db = require('./src/database-log/database-log')
 const { putteResponse } = require('./src/putte-talk/putte-talk')
 const { normalizeMessage } = require('./src/irc2stream/normalize-message')
 const {
@@ -25,7 +28,7 @@ const botSettings = {
   server: 'irc.bsnet.se',
   nickname: 'putte',
   options: {
-    debug: true,
+    debug: false,
     channels: ['#db-o-webb-student'],
     port: 6667,
     realName: 'a little bot listener',
@@ -46,31 +49,24 @@ const putte = new irc.Client(
 )
 
 /**
+ * Create sqlite database object
+ */
+const dblog = db.createDbLogger('./db/log.sqlite')
+
+/**
  * Save to database log
  *
  * @sig saveDbLog :: NormalizedMessage -> void
  */
-const dbLogger = R.identity
+const dbLogMessage = db.logMessage(dblog)
 
 /////////////////////////////////////////////////////////////////////
 // Setup bot listeners
 //
 
-/**
- * First draft possible IO monad use
- *
- * @sig handleMessage :: NormalizedMessage -> IO()
- */
-// const handleMessage = normalizedMessage => IO(
-//   () => {
-//     messageToConsole(normalizedMessage)
-//     if (isChannelMessage) {
-//       io.emit('message', normalizedMessage)
-//       dbLogger(normalizedMessage)
-//       putteResponder(normalizedMessage).runIO()
-//     }
-//   }
-// )
+const maybeStream = M.maybe(most.empty, most.just)
+
+const putteAnswerStream = maybeStream()
 
 putte.addListener('registered', log.c('Registered: '))
 
@@ -78,7 +74,7 @@ putte.addListener('error', log.e('Bot error: '))
 
 const onChannelMessage = R.pipe(
   R.tap(nm => io.emit('message', nm)),
-  R.tap(dbLogger),
+  R.tap(dbLogMessage),
   R.tap(putteResponse(putte.say.bind(putte)))
 )
 
@@ -96,7 +92,27 @@ putte.addListener('message', onMessage)
 
 // Serve index.html
 app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/index.html`)
+  res.sendFile(`${__dirname}/info.html`)
+})
+
+// Send bot settings
+app.get('/botsettings', (req, res) => {
+  res.json(botSettings)
+})
+
+// Retrieve history from now
+app.get('/history/:max(\\d+)', (req, res) => {
+  const maxMessages = req.params.max
+  const sql = 'SELECT * FROM log ORDER BY `time` desc LIMIT ?'
+  db
+    .query(dblog, sql, [maxMessages])
+    .then(rows => {
+      res.json(rows)
+    })
+    .catch(err => {
+      log.e('History error from sql: ')(err)
+      res.status(500).json({ error: err })
+    })
 })
 
 // Socket

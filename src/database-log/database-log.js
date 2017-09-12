@@ -5,21 +5,14 @@ const R = require('ramda')
 const sqlite3 = require('sqlite3').verbose()
 
 /**
- * Create database object
- *
- * @sig createDbLogger :: String -> Objekt
- */
-const createDbLogger = dbFile => new sqlite3.Database(dbFile)
-
-/**
  * Create log table if it does not exists
  *
- * @sig createLogTable ::
+ * @sig createLogTable :: Object -> void
  */
 const createLogTable = db => {
   db.run(`
   CREATE TABLE IF NOT EXISTS log (
-    id INTEGER PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     \`time\` INT,
     \`to\` TEXT,
     \`from\` TEXT,
@@ -28,22 +21,49 @@ const createLogTable = db => {
 `)
 }
 
-const logMessage = R.curry((db, { time, to, from, message }) =>
+/**
+ * Create database object
+ *
+ * @sig createDbLogger :: String -> Objekt
+ */
+const createDbLogger = dbFile => {
+  const dblog = new sqlite3.Database(dbFile)
+  // TODO: I do not know if this actually does what I want.
+  // I want the program to halt until the table is created.
+  // Preliminary test indicate that it doesn't.
+  dblog.serialize(() => {
+    createLogTable(dblog)
+  })
+  return dblog
+}
+
+const logMessage = R.curry((db, { time, to, from, message }) => {
   db
-    .prepare('INSERT INTO log VALUES (?, ?, ?, ?)')
+    .prepare(
+      'INSERT INTO log (`time`, `to`, `from`, `message`) VALUES (?, ?, ?, ?)'
+    )
     .run([time, to, from, message])
-)
+})
 
-// Try fluture
-
-const retrieveFullLog = db => null
-
-const retrieveLast15 = db => null
+/**
+ * Query database and get a Promise
+ *
+ * @sig query :: Object -> String -> Array -> Promise
+ */
+const query = R.curry((db, sql, param) => {
+  new Promise((resolve, reject) =>
+    db.all(sql, param, (err, res) => {
+      if (err) {
+        reject(err)
+      }
+      resolve(res)
+    })
+  )
+})
 
 module.exports = {
   createDbLogger,
   createLogTable,
   logMessage,
-  retrieveFullLog,
-  retrieveLast15
+  query
 }

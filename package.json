@@ -1,26 +1,24 @@
 {
   "name": "putte",
   "version": "1.0.0",
-  "description": "A server with a irc bot to listen to channel and echo messages on websockets",
+  "description":
+    "A server with a irc bot to listen to channel and echo messages on websockets",
   "main": "index.js",
   "scripts": {
     "test": "jest",
     "coverage": "jest --coverage"
   },
-  "keywords": [
-    "bot",
-    "express",
-    "node-irc"
-  ],
+  "keywords": ["bot", "express", "node-irc"],
   "author": "Anders Nygren",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^3.14.0",
+    "eslint": "^4.6.1",
     "jest": "^20.0.4"
   },
   "dependencies": {
     "express": "^4.14.0",
     "irc": "^0.5.2",
+    "most": "^1.7.0",
     "ramda": "^0.24.1",
     "ramda-fantasy": "^0.8.0",
     "socket.io": "^1.7.2",

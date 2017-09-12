@@ -38,6 +38,8 @@ const putteResponseMapper = R.cond([
 /**
  * The actual response emitter
  *
+ * TODO: Log own response
+ *
  * @sig ((String, String) -> NormalizedMessage -> void
  */
 const putteResponse = botResponder => normalizedMessage => {
