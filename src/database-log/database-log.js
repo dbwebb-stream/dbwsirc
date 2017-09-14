@@ -51,7 +51,7 @@ const logMessage = R.curry((db, { time, to, from, message }) => {
  * @sig query :: Object -> String -> Array -> Promise
  */
 const query = R.curry((db, sql, param) => {
-  new Promise((resolve, reject) =>
+  return new Promise((resolve, reject) =>
     db.all(sql, param, (err, res) => {
       if (err) {
         reject(err)

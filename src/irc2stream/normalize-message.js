@@ -1,5 +1,6 @@
 /** Normalize a message */
 'use strict'
+const R = require('ramda')
 /**
  * Return seconds since Epoch
  *
@@ -25,7 +26,7 @@ const unixNowSeconds = () => Math.floor(Date.now() / 1000)
  *
  * @sig _normalizeMessage :: ((() -> Number), String, String, String) -> Object
  */
-const _normalizeMessage = (time, from, to, message) => ({
+const _normalizeMessage = R.curry((time, from, to, message) => ({
   service: 'irc',
   serviceId: 'irc-putte-v0.0.1',
   time: time(),
@@ -35,7 +36,7 @@ const _normalizeMessage = (time, from, to, message) => ({
   message: message,
   meta: null,
   original: null
-})
+}))
 
 /**
  * Normalized message with bound time function

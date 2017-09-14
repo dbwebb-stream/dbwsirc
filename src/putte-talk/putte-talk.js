@@ -3,6 +3,7 @@
 
 // Includes
 const R = require('ramda')
+const M = require('ramda-fantasy').Maybe
 
 /******************************
  * String matches to listen for
@@ -26,9 +27,9 @@ const isHelloPutte = ({ message }) => R.test(/hej\s+putte/i, message)
 const isHelpPutte = ({ message }) => R.test(/putte\s+hjälp/i, message)
 
 /**
- * Bot answers to input strings.
+ * Bot answers to input message.
  *
- * @sig { message: String } -> String|undefined
+ * @sig NormalizedMessage -> String|undefined
  */
 const putteResponseMapper = R.cond([
   [isHelloPutte, R.always('Hej, jag heter putte och är en bot')],
@@ -36,7 +37,26 @@ const putteResponseMapper = R.cond([
 ])
 
 /**
+ * Get a Maybe response to input message.
+ *
+ * @sig maybePutteResponse :: NormalizedMessage -> Just(String)|Nothing()
+ */
+const maybePutteResponse = R.compose(M.toMaybe, putteResponseMapper)
+
+/**
+ * Send message to IRC
+ *
+ * @sig messageToIrc :: MessageSender -> String -> String -> void
+ *  MessageSender = (String, String), a funktion that can send messages to IRC
+ */
+const messageToIrc = R.curry((messageSender, to, message) => {
+  messageSender(to, message)
+})
+
+/**
  * The actual response emitter
+ *
+ * @DEPRECATED
  *
  * TODO: Log own response
  *
@@ -49,4 +69,9 @@ const putteResponse = botResponder => normalizedMessage => {
   }
 }
 
-module.exports = { putteResponseMapper, putteResponse }
+module.exports = {
+  putteResponseMapper,
+  putteResponse,
+  maybePutteResponse,
+  messageToIrc
+}

@@ -3,7 +3,7 @@
 
 // Includes
 const R = require('ramda')
-const M = require('ramda-fantasy')
+const M = require('ramda-fantasy').Maybe
 const app = require('express')()
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
@@ -12,7 +12,11 @@ const most = require('most')
 
 const log = require('./src/logger/logger')
 const db = require('./src/database-log/database-log')
-const { putteResponse } = require('./src/putte-talk/putte-talk')
+const {
+  // putteResponse,
+  maybePutteResponse,
+  messageToIrc
+} = require('./src/putte-talk/putte-talk')
 const { normalizeMessage } = require('./src/irc2stream/normalize-message')
 const {
   messageToConsole,
@@ -64,27 +68,39 @@ const dbLogMessage = db.logMessage(dblog)
 // Setup bot listeners
 //
 
-const maybeStream = M.maybe(most.empty, most.just)
+/**
+ * @sig putteAnswerStream :: NormalizedMessage -> Stream
+ */
+const putteAnswerStream = R.compose(most.of, maybePutteResponse)
 
-const putteAnswerStream = maybeStream()
+/**
+ * Use most.js to handle irc message stream.
+ *
+ * TODO: Cleanup
+ */
+most
+  .fromEvent('message', putte)
+  .map(([from, to, message]) => normalizeMessage(from, to, message))
+  .tap(messageToConsole)
+  .filter(isChannelMessage)
+  .chain(nm =>
+    most.merge(
+      most.of(nm),
+      putteAnswerStream(nm)
+        .filter(M.isJust)
+        .map(mres => mres.getOrElse('Bot answer stream error.'))
+        .tap(messageToIrc(putte.say.bind(putte), nm.to))
+        .map(normalizeMessage(nm.to, nm.from))
+      // .tap(log.c('PutteAnswerStream: '))
+    )
+  )
+  // .tap(log.c('\nAfter chaining putte answer: '))
+  .tap(dbLogMessage)
+  .forEach(nm => io.emit('message', nm))
 
 putte.addListener('registered', log.c('Registered: '))
 
 putte.addListener('error', log.e('Bot error: '))
-
-const onChannelMessage = R.pipe(
-  R.tap(nm => io.emit('message', nm)),
-  R.tap(dbLogMessage),
-  R.tap(putteResponse(putte.say.bind(putte)))
-)
-
-const onMessage = R.pipe(
-  normalizeMessage,
-  R.tap(messageToConsole),
-  R.when(isChannelMessage, onChannelMessage)
-)
-
-putte.addListener('message', onMessage)
 
 /////////////////////////////////////////////////////////////////////
 // Express server and socket stuff
@@ -92,7 +108,7 @@ putte.addListener('message', onMessage)
 
 // Serve index.html
 app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/info.html`)
+  res.sendFile(`${__dirname}/htdocs/info.html`)
 })
 
 // Send bot settings
