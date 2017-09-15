@@ -2,8 +2,6 @@
 'use strict'
 
 // Includes
-const R = require('ramda')
-const M = require('ramda-fantasy').Maybe
 const app = require('express')()
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
@@ -12,12 +10,8 @@ const most = require('most')
 
 const log = require('./src/logger/logger')
 const db = require('./src/database-log/database-log')
-const {
-  // putteResponse,
-  maybePutteResponse,
-  messageToIrc
-} = require('./src/putte-talk/putte-talk')
 const { normalizeMessage } = require('./src/irc2stream/normalize-message')
+const { createPutteAnswerStream } = require('./src/putte-answer/putte-answer')
 const {
   messageToConsole,
   isChannelMessage
@@ -71,29 +65,17 @@ const dbLogMessage = db.logMessage(dblog)
 /**
  * @sig putteAnswerStream :: NormalizedMessage -> Stream
  */
-const putteAnswerStream = R.compose(most.of, maybePutteResponse)
+const putteAnswerStream = createPutteAnswerStream(putte.say.bind(putte))
 
 /**
  * Use most.js to handle irc message stream.
- *
- * TODO: Cleanup
  */
 most
   .fromEvent('message', putte)
   .map(([from, to, message]) => normalizeMessage(from, to, message))
   .tap(messageToConsole)
   .filter(isChannelMessage)
-  .chain(nm =>
-    most.merge(
-      most.of(nm),
-      putteAnswerStream(nm)
-        .filter(M.isJust)
-        .map(mres => mres.getOrElse('Bot answer stream error.'))
-        .tap(messageToIrc(putte.say.bind(putte), nm.to))
-        .map(normalizeMessage(nm.to, nm.from))
-      // .tap(log.c('PutteAnswerStream: '))
-    )
-  )
+  .chain(nm => most.merge(most.of(nm), putteAnswerStream(nm)))
   // .tap(log.c('\nAfter chaining putte answer: '))
   .tap(dbLogMessage)
   .forEach(nm => io.emit('message', nm))
