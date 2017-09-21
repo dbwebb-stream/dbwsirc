@@ -8,35 +8,17 @@ const io = require('socket.io')(http)
 const irc = require('irc')
 const most = require('most')
 
-const server = require('./src/server-info')
+const { botSettings, appSettings } = require('./config')
 const log = require('./src/logger/logger')
 const db = require('./src/database-log/database-log')
 const { normalizeMessage } = require('./src/irc2stream/normalize-message')
 const { createPutteAnswerStream } = require('./src/putte-answer/putte-answer')
 const {
-  messageToConsole,
+  // messageToConsole,
   isChannelMessage
 } = require('./src/irc2stream/irc2stream')
 
-process.title = 'puttebot'
-
-/**
- * Bot settings
- *
- * @sig botSettings :: Object
- */
-const botSettings = {
-  server: 'irc.bsnet.se',
-  nickname: 'putte',
-  options: {
-    debug: false,
-    channels: ['#db-o-webb-student'],
-    port: 6667,
-    realName: 'a little bot listener',
-    retryDelay: 7000,
-    stripColors: true
-  }
-}
+process.title = appSettings.processTitle
 
 /////////////////////////////////////////////////////////////////////
 // Create the IRC bot and message handler
@@ -51,7 +33,7 @@ const putte = new irc.Client(
 /**
  * Create sqlite database object
  */
-const dblog = db.createDbLogger('./db/log.sqlite')
+const dblog = db.createDbLogger(appSettings.dblog)
 
 /**
  * Save to database log
@@ -102,7 +84,7 @@ app.get('/', (req, res) => {
       res.render('info.pug', {
         botSettings: JSON.stringify(botSettings, null, 2),
         latest: latest[0],
-        history: `http://${server.ip}:${server.port}/history/99`
+        history: `http://${appSettings.ip}:${appSettings.port}/history/99`
       })
     })
     .catch(err => {
@@ -132,7 +114,7 @@ app.get('/history/:max(\\d+)', (req, res) => {
 
 // Socket
 io.on('connection', socket => {
-  log.c ('incoming connection, handshake:') (socket.handshake)
+  log.c('incoming connection, handshake:')(socket.handshake)
 
   socket.on('disconnect', () => {
     log.c('connection closed, handshake:')(socket.handshake)
@@ -141,5 +123,5 @@ io.on('connection', socket => {
 
 // Start listening
 http.listen(1337, () => {
-  log.c(`listening on ${server.ip}:${server.port}`)('')
+  log.c(`listening on ${appSettings.ip}:${appSettings.port}`)('')
 })
