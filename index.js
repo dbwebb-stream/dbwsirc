@@ -8,6 +8,7 @@ const io = require('socket.io')(http)
 const irc = require('irc')
 const most = require('most')
 
+const server = require('./src/server-info')
 const log = require('./src/logger/logger')
 const db = require('./src/database-log/database-log')
 const { normalizeMessage } = require('./src/irc2stream/normalize-message')
@@ -16,6 +17,8 @@ const {
   messageToConsole,
   isChannelMessage
 } = require('./src/irc2stream/irc2stream')
+
+process.title = 'puttebot'
 
 /**
  * Bot settings
@@ -39,7 +42,6 @@ const botSettings = {
 // Create the IRC bot and message handler
 //
 
-// const putte = irc2stream.createIRCBot(botSettings)
 const putte = new irc.Client(
   botSettings.server,
   botSettings.nickname,
@@ -65,7 +67,10 @@ const dbLogMessage = db.logMessage(dblog)
 /**
  * @sig putteAnswerStream :: NormalizedMessage -> Stream
  */
-const putteAnswerStream = createPutteAnswerStream(putte.say.bind(putte))
+const putteAnswerStream = createPutteAnswerStream(
+  botSettings.nickname,
+  putte.say.bind(putte)
+)
 
 /**
  * Use most.js to handle irc message stream.
@@ -73,10 +78,9 @@ const putteAnswerStream = createPutteAnswerStream(putte.say.bind(putte))
 most
   .fromEvent('message', putte)
   .map(([from, to, message]) => normalizeMessage(from, to, message))
-  .tap(messageToConsole)
+  // .tap(messageToConsole)
   .filter(isChannelMessage)
   .chain(nm => most.merge(most.of(nm), putteAnswerStream(nm)))
-  // .tap(log.c('\nAfter chaining putte answer: '))
   .tap(dbLogMessage)
   .forEach(nm => io.emit('message', nm))
 
@@ -88,9 +92,23 @@ putte.addListener('error', log.e('Bot error: '))
 // Express server and socket stuff
 //
 
+app.set('view engine', 'pug')
+
 // Serve index.html
 app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/htdocs/info.html`)
+  db
+    .descendingHistory(dblog, 1)
+    .then(latest => {
+      res.render('info.pug', {
+        botSettings: JSON.stringify(botSettings, null, 2),
+        latest: latest[0],
+        history: `http://${server.ip}:${server.port}/history/99`
+      })
+    })
+    .catch(err => {
+      log.e('Error showing info page:\n')(err)
+      res.status(500).json({ error: err })
+    })
 })
 
 // Send bot settings
@@ -101,9 +119,8 @@ app.get('/botsettings', (req, res) => {
 // Retrieve history from now
 app.get('/history/:max(\\d+)', (req, res) => {
   const maxMessages = req.params.max
-  const sql = 'SELECT * FROM log ORDER BY `time` desc LIMIT ?'
   db
-    .query(dblog, sql, [maxMessages])
+    .descendingHistory(dblog, maxMessages)
     .then(rows => {
       res.json(rows)
     })
@@ -115,14 +132,14 @@ app.get('/history/:max(\\d+)', (req, res) => {
 
 // Socket
 io.on('connection', socket => {
-  log.c('incoming connection')('')
+  log.c ('incoming connection, handshake:') (socket.handshake)
 
   socket.on('disconnect', () => {
-    log.c('connection closed')('')
+    log.c('connection closed, handshake:')(socket.handshake)
   })
 })
 
 // Start listening
 http.listen(1337, () => {
-  log.c('listening on *:1337')('')
+  log.c(`listening on ${server.ip}:${server.port}`)('')
 })

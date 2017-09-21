@@ -23,13 +23,13 @@ const messageToIrc = R.curry((responder, to, message) => {
  * @sig createPutteAnswerStream :: Responder -> NormalizedMessage -> Stream
  *  Responder = (String -> String)
  */
-const createPutteAnswerStream = R.curry((responder, normalizedMessage) =>
+const createPutteAnswerStream = R.curry((nick, responder, normalizedMessage) =>
   most
     .of(maybePutteResponse(normalizedMessage))
     .filter(M.isJust)
     .map(mres => mres.getOrElse('Bot answer stream error.'))
     .tap(messageToIrc(responder, normalizedMessage.to))
-    .map(normalizeMessage('bot', normalizedMessage.to))
+    .map(normalizeMessage(nick, normalizedMessage.to))
 )
 
 module.exports = { messageToIrc, createPutteAnswerStream }

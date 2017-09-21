@@ -5,6 +5,8 @@
 const R = require('ramda')
 const M = require('ramda-fantasy').Maybe
 
+const server = require('../server-info')
+
 /******************************
  * String matches to listen for
  */
@@ -14,9 +16,7 @@ const M = require('ramda-fantasy').Maybe
  *
  * @sig { message: String } -> Boolean
  */
-// TODO: skulle detta att göra att putte pratar med sig själv???? 
 const isHelloPutte = ({ message }) => R.test(/hej.+putte/i, message)
-// const isHelloPutte = ({ message }) => R.test(/hej\s+putte/i, message)
 
 /**
  * Test if input contains "putte" followed by "hjälp"
@@ -24,7 +24,13 @@ const isHelloPutte = ({ message }) => R.test(/hej.+putte/i, message)
  * @sig { message: String } -> Boolean
  */
 const isHelpPutte = ({ message }) => R.test(/putte.+hjälp/i, message)
-// const isHelpPutte = ({ message }) => R.test(/putte\s+hjälp/i, message)
+
+/**
+ * Test if input contains "putte" followed by "info"
+ *
+ * @sig { message: String } -> Boolean
+ */
+const isInfoPutte = ({ message }) => R.test(/putte.+info/i, message)
 
 /**
  * Bot answers to input message.
@@ -33,7 +39,8 @@ const isHelpPutte = ({ message }) => R.test(/putte.+hjälp/i, message)
  */
 const putteResponseMapper = R.cond([
   [isHelloPutte, R.always('Hej, jag heter putte och är en bot')],
-  [isHelpPutte, R.always('Äh, jag kan ingenting. Be marvin.')]
+  [isHelpPutte, R.always('Äh, jag kan ingenting. Be marvin.')],
+  [isInfoPutte, R.always(`Kolla på: http://${server.ip}:${server.port}`)]
 ])
 
 /**

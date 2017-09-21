@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "start": "node index.js >> putte.log &",
+    "stop": "pkill --signal SIGINT puttebot"
   },
   "keywords": ["bot", "express", "node-irc"],
   "author": "Anders Nygren",
@@ -17,8 +19,10 @@
   },
   "dependencies": {
     "express": "^4.14.0",
+    "ip": "^1.1.5",
     "irc": "^0.5.2",
     "most": "^1.7.0",
+    "pug": "^2.0.0-rc.4",
     "ramda": "^0.24.1",
     "ramda-fantasy": "^0.8.0",
     "socket.io": "^1.7.2",

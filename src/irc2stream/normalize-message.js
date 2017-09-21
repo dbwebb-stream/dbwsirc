@@ -6,7 +6,7 @@ const R = require('ramda')
  *
  * @sig unixNowSeconds :: Number
  */
-const unixNowSeconds = () => Math.floor(Date.now() / 1000)
+const unixNowSeconds = () => Math.floor(Date.now())
 
 /**
  * Construct a message according to architecture spec

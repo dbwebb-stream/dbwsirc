@@ -1,0 +1,93 @@
+doctype html
+html
+
+  head
+    meta(charset="utf-8")/
+    // mobile
+    meta(name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no")/
+    title Putte info
+
+    style.
+      body {
+        font-family: monospace;
+      }
+
+      h1 {
+        background-color: black;
+        color: white;
+        border-bottom: 2px solid black;
+        padding: 1rem;
+      }
+
+      main {
+        padding: 0 1rem 0 1rem;
+      }
+
+      pre {
+        padding-bottom: 1rem;
+      }
+
+      hr {
+        border: 1px solid black;
+        background: black;
+      }
+
+      ul {
+        list-style: none;
+      }
+
+  body
+    h1 Putte
+    main
+      div(id="message-display")
+        h2 Bot Settings
+        pre= botSettings
+
+        hr
+
+        h2 Latest
+        pre {{ formatedMessage }}
+
+        a(href= history) Log
+        hr
+
+        h2 Raw feed
+        pre
+          ul(id="messages")
+            li(v-for="message in messages" track-by="$index") {{ message }}
+
+    script(src="https://cdn.socket.io/socket.io-1.4.5.js")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.js")
+
+    script.
+      var socket = io()
+
+      var formatMessage = ({ from, to, message }) =>
+        `${from} => ${to}\n-\n${message}\n`
+
+      new Vue({
+        el: '#message-display',
+
+        data: {
+          formatedMessage: formatMessage({from: "#{latest.from}", to: "#{latest.to}", message: "#{latest.message}"}),
+          message: '',
+          messages: []
+        },
+
+        ready: function () {
+          socket.on('message', (message) => {
+            this.messages.push(JSON.stringify(message, null, 2) || message || 'error in message');
+            this.formatedMessage = formatMessage(message)
+          })
+
+          socket.on('disconnect', (message) => {
+            this.messages.push('< The server disconnected >');
+          })
+
+          socket.on('connect', (message) => {
+            this.messages.push('< Connected to server >');
+          })
+        },
+      })
+
+

@@ -61,9 +61,15 @@ const query = R.curry((db, sql, param) => {
   )
 })
 
+const descendingHistory = R.curry((db, max) => {
+  const sql = 'SELECT * FROM log ORDER BY `id` desc LIMIT ?'
+  return query(db, sql, [max])
+})
+
 module.exports = {
   createDbLogger,
   createLogTable,
   logMessage,
-  query
+  query,
+  descendingHistory
 }
