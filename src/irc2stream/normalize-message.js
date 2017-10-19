@@ -28,7 +28,7 @@ const unixNowSeconds = () => Math.floor(Date.now());
  */
 const _normalizeMessage = R.curry((time, from, to, message) => ({
     service: "irc",
-    serviceId: "irc-putte-v0.0.1",
+    serviceId: "irc-putte-v1.0.0",
     time: time(),
     to: to,
     from: from,

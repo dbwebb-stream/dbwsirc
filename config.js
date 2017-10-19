@@ -11,7 +11,7 @@ const botSettings = {
     nickname: "putte",
     options: {
         debug: false,
-        channels: ["#db-o-webb-student"],
+        channels: ["#db-o-webb"],
         port: 6667,
         realName: "a little bot listener",
         retryDelay: 7000,
@@ -26,7 +26,7 @@ const botSettings = {
  */
 const appSettings = {
     ip: server.ip,
-    port: server.port,
+    port: server.port, // Global - see src/server.js
     dblog: "./db/log.sqlite",
     processTitle: "puttebot"
 };

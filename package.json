@@ -1,8 +1,7 @@
 {
   "name": "putte",
   "version": "1.0.0",
-  "description":
-    "A server with a irc bot to listen to channel and echo messages on websockets",
+  "description": "A server with a irc bot to listen to channel and echo messages on websockets",
   "main": "index.js",
   "scripts": {
     "test": "jest",
@@ -10,7 +9,11 @@
     "start": "node index.js >> putte.log &",
     "stop": "pkill --signal SIGINT puttebot"
   },
-  "keywords": ["bot", "express", "node-irc"],
+  "keywords": [
+    "bot",
+    "express",
+    "node-irc"
+  ],
   "author": "Anders Nygren",
   "license": "MIT",
   "devDependencies": {
